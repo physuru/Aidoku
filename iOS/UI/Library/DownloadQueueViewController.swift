@@ -11,6 +11,18 @@ class DownloadQueueViewController: UITableViewController {
 
     var queue: [(sourceId: String, downloads: [Download])] = []
 
+    var observers: [NSObjectProtocol] = []
+    var chapters: [Chapter] = []
+
+    deinit {
+        for observer in observers {
+            NotificationCenter.default.removeObserver(observer)
+        }
+        for chapter in chapters {
+            DownloadManager.shared.removeProgressBlock(for: chapter)
+        }
+    }
+
     init() {
         super.init(style: .insetGrouped)
     }
@@ -19,10 +31,11 @@ class DownloadQueueViewController: UITableViewController {
         fatalError("init(coder:) has not been implemented")
     }
 
+    // swiftlint:disable:next cyclomatic_complexity
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        title = "Download Queue"
+        title = NSLocalizedString("DOWNLOAD_QUEUE", comment: "")
         navigationController?.navigationBar.prefersLargeTitles = true
 
         navigationItem.rightBarButtonItem = UIBarButtonItem(
@@ -34,7 +47,10 @@ class DownloadQueueViewController: UITableViewController {
         tableView.register(DownloadTableViewCell.self, forCellReuseIdentifier: "DownloadTableViewCell")
 
         // add download to queue list
-        NotificationCenter.default.addObserver(forName: NSNotification.Name("downloadsQueued"), object: nil, queue: nil) { notification in
+        observers.append(NotificationCenter.default.addObserver(
+            forName: NSNotification.Name("downloadsQueued"), object: nil, queue: nil
+        ) { [weak self] notification in
+            guard let self = self else { return }
             if let downloads = notification.object as? [Download] {
                 var sectionsToInsert: [Int] = []
                 var rowsToInsert: [IndexPath] = []
@@ -64,13 +80,14 @@ class DownloadQueueViewController: UITableViewController {
                             self.tableView.insertRows(at: newRows, with: .automatic)
                         }
                     }
+                    self.updateClearButton()
                 }
 
             }
-        }
+        })
 
-        // remove download from queue list
-        NotificationCenter.default.addObserver(forName: NSNotification.Name("downloadFinished"), object: nil, queue: nil) { notification in
+        let clearDownloadBlock: (Notification) -> Void = { [weak self] notification in
+            guard let self = self else { return }
             if let download = notification.object as? Download,
                let index = self.queue.firstIndex(where: { $0.sourceId == download.sourceId }) {
                 var downloads = self.queue[index].downloads
@@ -83,6 +100,7 @@ class DownloadQueueViewController: UITableViewController {
                         self.tableView.performBatchUpdates {
                             self.tableView.deleteSections(IndexSet(integer: index), with: .fade)
                         }
+                        self.updateClearButton()
                     }
                 } else {
                     self.queue[index].downloads = downloads
@@ -90,10 +108,33 @@ class DownloadQueueViewController: UITableViewController {
                         self.tableView.performBatchUpdates {
                             self.tableView.deleteRows(at: [IndexPath(row: indexToRemove, section: index)], with: .automatic)
                         }
+                        self.updateClearButton()
                     }
                 }
             }
         }
+
+        // remove download from queue list
+        observers.append(NotificationCenter.default.addObserver(
+            forName: NSNotification.Name("downloadFinished"), object: nil, queue: nil, using: clearDownloadBlock
+        ))
+
+        observers.append(NotificationCenter.default.addObserver(
+            forName: NSNotification.Name("downloadCancelled"), object: nil, queue: nil, using: clearDownloadBlock
+        ))
+
+        observers.append(NotificationCenter.default.addObserver(
+            forName: NSNotification.Name("downloadsCancelled"), object: nil, queue: nil
+        ) { [weak self] notification in
+            guard let self = self else { return }
+            if notification.object == nil { // all downloads cleared
+                self.queue.removeAll()
+                Task { @MainActor in
+                    self.tableView.deleteSections(IndexSet(integersIn: 0..<self.tableView.numberOfSections), with: .fade)
+                    self.updateClearButton()
+                }
+            }
+        })
 
         // get initial download queue
         Task {
@@ -104,8 +145,27 @@ class DownloadQueueViewController: UITableViewController {
             }
             Task { @MainActor in
                 self.tableView.reloadData()
+                self.updateClearButton()
             }
         }
+    }
+
+    @MainActor
+    func updateClearButton() {
+        if !queue.isEmpty {
+            navigationItem.leftBarButtonItem = UIBarButtonItem(
+                title: NSLocalizedString("CLEAR", comment: ""),
+                style: .plain,
+                target: self,
+                action: #selector(clearQueue)
+            )
+        } else {
+            navigationItem.leftBarButtonItem = nil
+        }
+    }
+
+    @objc func clearQueue() {
+        DownloadManager.shared.cancelDownloads()
     }
 
     @objc func close() {
@@ -130,6 +190,7 @@ extension DownloadQueueViewController {
         return source?.manifest.info.name
     }
 
+    // swiftlint:disable:next cyclomatic_complexity
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         var cell = tableView.dequeueReusableCell(withIdentifier: "DownloadTableViewCell")
         if cell == nil {
@@ -149,10 +210,13 @@ extension DownloadQueueViewController {
         if let chapter = download.chapter {
             var text = ""
             if let num = chapter.chapterNum {
-                text += String(format: "Chapter %g", num)
+                text += String(format: NSLocalizedString("CHAPTER_X", comment: ""), num)
+                if chapter.title != nil {
+                    text += ": "
+                }
             }
             if let title = chapter.title {
-                text += ": \(title)"
+                text += title
             }
             cell.subtitleLabel.text = text
         }
@@ -165,7 +229,11 @@ extension DownloadQueueViewController {
 
         // progress update block
         if let chapter = download.chapter {
-            DownloadManager.shared.onProgress(for: chapter) { progress, total in
+            if !chapters.contains(chapter) {
+                chapters.append(chapter)
+            }
+            DownloadManager.shared.onProgress(for: chapter) { [weak self] progress, total in
+                guard let self = self else { return }
                 if let queueIndex = self.queue.firstIndex(where: { $0.sourceId == download.sourceId }),
                    let downloadIndex = self.queue[queueIndex].downloads.firstIndex(where: { $0 == download }) {
                     self.queue[queueIndex].downloads[downloadIndex].progress = progress

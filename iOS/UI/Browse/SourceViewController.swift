@@ -87,13 +87,16 @@ class SourceViewController: MangaCollectionViewController {
             }
         }
 
-        NotificationCenter.default.addObserver(forName: Notification.Name("\(source.id).languages"), object: nil, queue: nil) { _ in
+        observers.append(NotificationCenter.default.addObserver(
+            forName: Notification.Name("\(source.id).languages"), object: nil, queue: nil
+        ) { [weak self] _ in
+            guard let self = self else { return }
             Task {
                 self.page = nil
                 await self.fetchData()
                 self.reloadData()
             }
-        }
+        })
     }
 
     override func viewDidAppear(_ animated: Bool) {
@@ -277,6 +280,8 @@ extension SourceViewController: UICollectionViewDelegateFlowLayout {
                 collectionView.insertItems(at: indexPaths)
             }
         }
+        guard indexPath.row < manga.count else { return }
+        (cell as? MangaCoverCell)?.showsLibraryBadge = DataManager.shared.libraryContains(manga: manga[indexPath.row])
     }
 }
 

@@ -11,14 +11,13 @@
 "RENAME" = "Renomear";
 
 // Library
-"LIBRARY" = "Bibliteca";
+"LIBRARY" = "Biblioteca";
 "LIBRARY_SEARCH" = "Encontrar na Biblioteca";
 "LIBRARY_EMPTY" = "Biblioteca Vazia";
 "LIBRARY_ADD_FROM_BROWSE" = "Adicionar Mangás da Aba Explorar";
 "ADD_TO_LIBRARY" = "Adicionar para Biblioteca";
 "REMOVE_FROM_LIBRARY" = "Remover da Biblioteca";
 "MANGA_INFO" = "Informação do Mangá";
-
 "SORT_BY" = "Ordenar Por";
 "TITLE" = "Título";
 "LAST_OPENED" = "Último Aberto";
@@ -34,7 +33,6 @@
 "UPDATES" = "Atualizações";
 "INSTALLED" = "Instalado";
 "EXTERNAL" = "Externo";
-
 "BUTTON_UPDATE" = "ATUALIZAR";
 "BUTTON_GET" = "OBTER";
 "BUTTON_ERROR" = "ERRO";
@@ -52,14 +50,12 @@
 // Manga
 "UNTITLED" = "Sem Título";
 "ONGOING" = "Em Progresso";
-"CANCLLED" = "Cancelado";
 "COMPLETED" = "Completo";
 "HIATUS" = "Hiato";
 "SUGGESTIVE" = "Suggestivo";
 "NSFW" = "NSFW";
 "MORE" = "mais";
 "SOURCE_ORDER" = "Ordem da Fonte";
-
 "MISSING_SOURCE" = "Fonte Não Encontrada";
 "MISSING_SOURCE_TEXT" = "A fonte original parece estar ausente para esse mangá. Por favor, reinstale-o ou remova esse título da sua biblioteca.";
 
@@ -75,7 +71,6 @@
 "MARK_PREVIOUS" = "Marcar Anterior";
 "MARK_READ" = "Marcar como Lido";
 "MARK_UNREAD" = "Marcar como Não Lido";
-
 "READER_SETTINGS" = "Configurações do Leitor";
 "READING_MODE" = "Modo de Leitura";
 "DEFAULT" = "Padrão";
@@ -85,7 +80,6 @@
 "VERTICAL_SCROLL" = "Rolagem Vertical";
 "EXPERIMENTAL" = "Experimental";
 "INFINITE_VERTICAL_SCROLL" = "Rolagem Vertical Infinita";
-
 "SAVE_TO_PHOTOS" = "Salvar para Fotos";
 
 // Search
@@ -94,23 +88,19 @@
 
 // Settings
 "SETTINGS" = "Configurações";
-
 "ABOUT" = "Sobre";
 "GITHUB_REPO" = "Repositório GitHub";
 "DISCORD_SERVER" = "Servidor do Discord";
 "SUPPPORT_DEVELOPMENT" = "Apoiar Desenvolvimento";
-
 "GENERAL" = "Geral";
 "ICLOUD_SYNC" = "Sincronizar com ICloud";
 "APPEARANCE" = "Aparência";
 "APPEARANCE_LIGHT" = "Claro";
 "APPEARANCE_DARK" = "Escuro";
 "USE_SYSTEM_APPEARANCE" = "Usar Aparência do Sistema";
-
 "MANGA_PER_ROW" = "Mangás por Linha";
 "PORTRAIT" = "Retrato";
 "LANDSCAPE" = "Paisagem";
-
 "READER" = "Leitor";
 "OPEN_READER_VIEW" = "Abrir Visualização do Leitor";
 "UNREAD_CHAPTER_BADGES" = "Bolha de Capítulos Não Lidos";
@@ -118,14 +108,11 @@
 "PIN_MANGA_TYPE" = "Tipo de Fixação";
 "PIN_MANGA_UNREAD" = "Não Lido";
 "PIN_MANGA_UPDATED" = "Atualizado";
-
 "SOURCE_LISTS" = "Listas de Fontes";
 "SOURCE_LIST_ADDED" = "Lista de Fontes Adicionada";
 "SOURCE_LIST_ADDED_TEXT" = "Agora você pode procurar fontes externas na aba Explorar.";
 "SHOW_NSFW_SOURCES" = "Mostrar Fontes NSFW";
-
 "DOWNSAMPLE_IMAGES" = "Comprimir Imagens";
-
 "BACKUPS" = "Backups";
 "BACKUP_NAME" = "Nome do Backup";
 "RENAME_BACKUP" = "Renomear Backup";
@@ -133,8 +120,6 @@
 "CORRUPTED_BACKUP" = "Backup Corrompido";
 "CORRUPTED_BACKUP_TEXT" = "Esse Backup parece ter dados configurados errôneamente. Renomear não é possível.";
 "BACKUP_INFO" = "Aperte e segure em um Backup para exportá-lo, ou arraste para a esquerda para deletá-lo.";
-"BACKUP_MISSING_SOURCES" = "Fontes Não Encontradas";
-"BACKUP_MISSING_SOURCES_TEXT" = "O Backup restaurado pode conter dados das seguintes fontes, que não estão instaladas no momento:";
 "RESTORE_BACKUP" = "Restaurar para este Backup?";
 "RESTORE_BACKUP_TEXT" = "Todos os dados atuais serão removidos e substituídos pelos dados deste Backup.";
 "BACKUP_IMPORT_SUCCESS" = "Backup Importado";
@@ -143,9 +128,7 @@
 "BACKUP_IMPORT_FAIL_TEXT" = "Salvamento do Backup falhou. Please ensure that your backup is in the proper format.Por favor, garanta que seu Backup está no formato apropriado.";
 "EXPORT" = "Exportar";
 "RESTORE" = "Restaurar";
-
 "ADVANCED" = "Avançado";
-"RESET" = "Redefinir";
 "RESET_TEXT" = "Essa ação é irreversível. Todos os dados, configurações e caches serão limpos e redefinidos.";
 "CLEAR_CHAPTER_CACHE" = "Limpar Cache do Capítulo";
 "CLEAR_CHAPTER_CACHE_TEXT" = "Essa ação é irreversível. Capítulos em cache serão limpos e reinstalados.";
@@ -155,3 +138,60 @@
 "CLEAR_NETWORK_CACHE_TEXT" = "Essa ação é irreversível. Pedidos de Rede e imagens em cache serão limpos.";
 "CLEAR_READ_HISTORY" = "Limpar Histórico de Leitura";
 "CLEAR_READ_HISTORY_TEXT" = "Essa ação é irreversível. Todo o histórico de leitura será removido.";
+"REMOVE" = "Remover";
+"CLEAR" = "Limpar";
+"DOWNLOADED" = "Baixado(s)";
+"DOWNLOAD_QUEUE" = "Fila de Downloads";
+"CANCEL_DOWNLOAD" = "Cancelar Download";
+"REMOVE_DOWNLOAD" = "Remover Download";
+"REMOVE_ALL_DOWNLOADS" = "Remover Todos os Downloads";
+"REMOVE_DOWNLOADS" = "Remover Downloads";
+"REMOVE_DOWNLOADS_CONFIRM" = "Tem certeza que deseja remover todos os downloads selecionados?";
+"FILTER_BY" = "Filtrar Por";
+"CATEGORIES" = "Categorias";
+"DEFAULT_CATEGORY" = "Categoria Padrão";
+"ALWAYS_ASK" = "Sempre Perguntar";
+"SELECT_CHAPTERS" = "Selecionar Capítulos";
+"VOLUME_X" = "Volume %g";
+"CHAPTER_X" = "Capítulo %g";
+"VOL_X" = "Vol. %g";
+"CURRENT_COLON" = "Atual(is):";
+
+// History
+"HISTORY" = "Histórico";
+"%@_AGO" = "%@ ago";
+"REMOVE_ALL_MANGA_HISTORY" = "Remover Histórico de Todos os Mangás";
+"VIEW_HISTORY" = "Visualizar Histórico";
+"LOADING_ELLIPSIS" = "Carregando…";
+"NONE" = "Nenhum";
+"SHARE" = "Compartilhar";
+
+// Downloads
+"DOWNLOAD" = "Baixar";
+"CATEGORY_ADD_TEXT" = "Insira o Título da nova categoria a ser criada.";
+
+// Categories
+"ALL" = "Todos";
+"EDIT_CATEGORIES" = "Editar Categorias";
+"CATEGORY_TITLE" = "Título da categoria";
+"CATEGORY_ADD" = "Adicionar Categoria";
+"LANGUAGES" = "Línguas";
+"CANCELLED" = "Cancelado";
+"HISTORY_LOCKED" = "Histórico está travado.";
+"SELECT_ALL" = "Selecionar Tudo";
+"CHAPTERS" = "Capítulos";
+"BUILD" = "Versão";
+"DESELECT_ALL" = "Deselecionar Tudo";
+"CH_X" = "Cap. %g";
+"VOL_SPACE_X" = "Vol. %g";
+"CH_SPACE_X" = "Cap. %g";
+"MARK" = "Marcar";
+"PREVIOUS_COLON" = "Anterior(es):";
+"NO_NEXT_CHAPTER" = "Não há um próximo capítulo";
+"NEXT_COLON" = "Próximo(s):";
+"FINISHED_COLON" = "Finalizado(s):";
+"NO_PREVIOUS_CHAPTER" = "Não há um capítulo anterior";
+"PAGE_X" = "Página %i";
+"REMOVE_CHAPTER_HISTORY_TEXT" = "Isso irá remover o histórico para esse capítulo. Tem certeza que deseja continuar?";
+"AUTH_FOR_HISTORY" = "Autentique para visualizar histórico de leitura.";
+"AUTH_TO_ENABLE" = "Autentique para habilitar.";

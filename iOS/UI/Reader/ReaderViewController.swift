@@ -124,6 +124,7 @@ class ReaderViewController: UIViewController {
     let pagesLeftLabel = UILabel()
     let progressView = UIActivityIndicatorView(style: .medium)
 
+    var chapterSelectionPopoverButton: UIBarButtonItem!
     var toolbarSliderWidthConstraint: NSLayoutConstraint?
 
     var currentPageIndex = 0
@@ -142,11 +143,26 @@ class ReaderViewController: UIViewController {
         statusBarHidden
     }
 
+    var observers: [NSObjectProtocol] = []
+
+    deinit {
+        for observer in observers {
+            NotificationCenter.default.removeObserver(observer)
+        }
+        pageManager?.remove()
+    }
+
     init(manga: Manga?, chapter: Chapter, chapterList: [Chapter]) {
         self.manga = manga
         self.chapter = chapter
         self.chapterList = chapterList
         super.init(nibName: nil, bundle: nil)
+        self.chapterSelectionPopoverButton = UIBarButtonItem(
+            image: UIImage(systemName: "list.bullet"),
+            style: .plain,
+            target: self,
+            action: #selector(openChapterSelectionPopover(_:))
+        )
     }
 
     required init?(coder: NSCoder) {
@@ -166,12 +182,7 @@ class ReaderViewController: UIViewController {
                 target: self,
                 action: #selector(close)
             ),
-            UIBarButtonItem(
-                image: UIImage(systemName: "list.bullet"),
-                style: .plain,
-                target: self,
-                action: #selector(openChapterSelectionPopover(_:))
-            )
+            chapterSelectionPopoverButton
         ]
 
         navigationItem.rightBarButtonItems = [
@@ -254,9 +265,11 @@ class ReaderViewController: UIViewController {
 
         setReadingMode(UserDefaults.standard.string(forKey: "Reader.readingMode"))
 
-        NotificationCenter.default.addObserver(forName: NSNotification.Name("Reader.readingMode"), object: nil, queue: nil) { _ in
-            self.setReadingMode(UserDefaults.standard.string(forKey: "Reader.readingMode"))
-        }
+        observers.append(NotificationCenter.default.addObserver(
+            forName: NSNotification.Name("Reader.readingMode"), object: nil, queue: nil
+        ) { [weak self] _ in
+            self?.setReadingMode(UserDefaults.standard.string(forKey: "Reader.readingMode"))
+        })
 
         Task {
             await loadChapter()
@@ -325,10 +338,6 @@ class ReaderViewController: UIViewController {
             self.updateLabels()
         }
     }
-
-    override func viewWillDisappear(_ animated: Bool) {
-        super.viewWillDisappear(animated)
-    }
 }
 
 extension ReaderViewController {
@@ -366,14 +375,15 @@ extension ReaderViewController {
 
     @MainActor
     func loadChapter() async {
-        if let manga = manga {
-            DataManager.shared.setRead(manga: manga)
+        if !UserDefaults.standard.bool(forKey: "General.incognitoMode") {
+            if let manga = manga {
+                DataManager.shared.setRead(manga: manga)
+            }
         }
-        DataManager.shared.addHistory(for: chapter)
 
         navigationItem.setTitle(
-            upper: chapter.volumeNum != nil ? String(format: "Volume %g", chapter.volumeNum ?? 0) : nil,
-            lower: String(format: "Chapter %g", chapter.chapterNum ?? 0)
+            upper: chapter.volumeNum != nil ? String(format: NSLocalizedString("VOLUME_X", comment: ""), chapter.volumeNum ?? 0) : nil,
+            lower: String(format: NSLocalizedString("CHAPTER_X", comment: ""), chapter.chapterNum ?? 0)
         )
 
         if chapterList.isEmpty {
@@ -389,7 +399,12 @@ extension ReaderViewController {
         } else if index >= pageCount {
             index = pageCount - 1
         }
-        DataManager.shared.setCurrentPage(index, for: chapter)
+        if index == 0 && !DataManager.shared.hasHistory(for: chapter) {
+            // if a chapter is opened and no pages are turned, no need to save history
+        } else if !UserDefaults.standard.bool(forKey: "General.incognitoMode") {
+            DataManager.shared.setCurrentPage(index + 1, for: chapter)
+            DataManager.shared.setPageCount(pageCount, for: chapter)
+        }
         self.dismiss(animated: true)
     }
 
@@ -471,7 +486,14 @@ extension ReaderViewController: ReaderPageManagerDelegate {
         } else if index >= pageCount {
             index = pageCount - 1
         }
-        DataManager.shared.setCurrentPage(index, for: chapter)
+        if index == 0 && !DataManager.shared.hasHistory(for: chapter) {
+            // if a chapter is opened and no pages are turned, no need to save history
+        } else if !UserDefaults.standard.bool(forKey: "General.incognitoMode") {
+            DataManager.shared.setCurrentPage(index + 1, for: chapter, context: DataManager.shared.backgroundContext)
+            if index == pageCount - 1 {
+                DataManager.shared.setCompleted(chapter: chapter, context: DataManager.shared.backgroundContext)
+            }
+        }
     }
 
     func pagesLoaded() {
@@ -505,5 +527,139 @@ extension ReaderViewController: UIPopoverPresentationControllerDelegate {
     func adaptivePresentationStyle(for controller: UIPresentationController,
                                    traitCollection: UITraitCollection) -> UIModalPresentationStyle {
         .none
+    }
+}
+
+// MARK: - Key Handler
+extension ReaderViewController {
+    override var canBecomeFirstResponder: Bool { true }
+    override var canResignFirstResponder: Bool { true }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        becomeFirstResponder()
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        resignFirstResponder()
+    }
+
+    override var keyCommands: [UIKeyCommand]? {
+        let nextPageKey: String
+        let previousPageKey: String
+        var nextPageKey2 = UIKeyCommand.inputDownArrow
+        var previousPageKey2 = UIKeyCommand.inputUpArrow
+
+        if readingMode == .rtl {
+            nextPageKey = UIKeyCommand.inputLeftArrow
+            previousPageKey = UIKeyCommand.inputRightArrow
+            nextPageKey2 = UIKeyCommand.inputUpArrow
+            previousPageKey2 = UIKeyCommand.inputDownArrow
+        } else {
+            nextPageKey = UIKeyCommand.inputRightArrow
+            previousPageKey = UIKeyCommand.inputLeftArrow
+        }
+        return [
+            UIKeyCommand(
+                title: "Next Page",
+                action: #selector(nextPage),
+                input: nextPageKey,
+                modifierFlags: [],
+                alternates: [],
+                attributes: [],
+                state: .off
+            ),
+            UIKeyCommand(
+                title: "Next Page",
+                action: #selector(nextPage),
+                input: nextPageKey2,
+                modifierFlags: [],
+                alternates: [],
+                attributes: [],
+                state: .off
+            ),
+            UIKeyCommand(
+                title: "Previous Page",
+                action: #selector(previousPage),
+                input: previousPageKey,
+                modifierFlags: [],
+                alternates: [],
+                attributes: [],
+                state: .off
+            ),
+            UIKeyCommand(
+                title: "Previous Page",
+                action: #selector(previousPage),
+                input: previousPageKey2,
+                modifierFlags: [],
+                alternates: [],
+                attributes: [],
+                state: .off
+            ),
+            UIKeyCommand(
+                title: "Next Chapter",
+                action: #selector(nextChapter),
+                input: nextPageKey,
+                modifierFlags: [.command],
+                alternates: [],
+                attributes: [],
+                state: .off
+            ),
+            UIKeyCommand(
+                title: "Previous Chapter",
+                action: #selector(previousChapter),
+                input: previousPageKey,
+                modifierFlags: [.command],
+                alternates: [],
+                attributes: [],
+                state: .off),
+            UIKeyCommand(
+                title: "Close Reader",
+                action: #selector(close),
+                input: UIKeyCommand.inputEscape,
+                modifierFlags: [],
+                alternates: [],
+                attributes: [],
+                state: .off
+            ),
+            UIKeyCommand(
+                title: "Open Chapter List Popover",
+                action: #selector(openChapterSelectionPopoverWrapper),
+                input: "\t",
+                modifierFlags: [],
+                alternates: [],
+                attributes: [],
+                state: .off
+            )
+        ]
+    }
+
+    @objc func nextPage() {
+        pageManager.nextPage()
+    }
+
+    @objc func previousPage() {
+        pageManager.previousPage()
+    }
+
+    @objc func nextChapter() {
+        chapter = chapterList[chapterIndex + 1]
+        pageManager.setChapter(chapter: chapter, startPage: DataManager.shared.currentPage(for: chapter))
+        Task {
+            await loadChapter()
+        }
+    }
+
+    @objc func previousChapter() {
+        chapter = chapterList[chapterIndex - 1]
+        pageManager.setChapter(chapter: chapter, startPage: DataManager.shared.currentPage(for: chapter))
+        Task {
+            await loadChapter()
+        }
+    }
+
+    @objc func openChapterSelectionPopoverWrapper() {
+        openChapterSelectionPopover(chapterSelectionPopoverButton)
     }
 }

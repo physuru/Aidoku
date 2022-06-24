@@ -54,6 +54,17 @@ class SearchViewController: UIViewController {
 
     var query: String?
 
+    var hoveredCell: MangaCoverCell?
+    var hovering = false
+
+    var observers: [NSObjectProtocol] = []
+
+    deinit {
+        for observer in observers {
+            NotificationCenter.default.removeObserver(observer)
+        }
+    }
+
     override func viewDidLoad() {
         super.viewDidLoad()
 
@@ -110,22 +121,32 @@ class SearchViewController: UIViewController {
         collectionView?.widthAnchor.constraint(equalTo: view.widthAnchor).isActive = true
         collectionView?.heightAnchor.constraint(equalTo: view.heightAnchor).isActive = true
 
-        NotificationCenter.default.addObserver(forName: Notification.Name("updateSourceList"), object: nil, queue: nil) { _ in
+        observers.append(NotificationCenter.default.addObserver(
+            forName: Notification.Name("updateSourceList"), object: nil, queue: nil
+        ) { [weak self] _ in
+            guard let self = self else { return }
             Task { @MainActor in
                 self.sources = SourceManager.shared.sources.filter { $0.titleSearchable }
                 self.collectionView?.reloadData()
             }
-        }
-        NotificationCenter.default.addObserver(forName: Notification.Name("loadedSourceFilters"), object: nil, queue: nil) { _ in
+        })
+        observers.append(NotificationCenter.default.addObserver(
+            forName: Notification.Name("loadedSourceFilters"), object: nil, queue: nil
+        ) { [weak self] _ in
+            guard let self = self else { return }
             Task { @MainActor in
                 self.sources = SourceManager.shared.sources.filter { $0.titleSearchable }
                 self.collectionView?.reloadData()
             }
-        }
+        })
     }
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+
+        becomeFirstResponder()
+        hoveredCell?.highlight()
+
         navigationController?.navigationBar.tintColor = UINavigationBar.appearance().tintColor
         navigationController?.tabBarController?.tabBar.tintColor = UITabBar.appearance().tintColor
     }
@@ -169,13 +190,17 @@ extension SearchViewController: UICollectionViewDataSource {
         results[sources[section].id]?.manga.count ?? 0
     }
 
-    func collectionView(_ collectionView: UICollectionView,
-                        viewForSupplementaryElementOfKind kind: String,
-                        at indexPath: IndexPath) -> UICollectionReusableView {
+    func collectionView(
+        _ collectionView: UICollectionView,
+        viewForSupplementaryElementOfKind kind: String,
+        at indexPath: IndexPath
+    ) -> UICollectionReusableView {
         if kind == "header" {
-            var headerView = collectionView.dequeueReusableSupplementaryView(ofKind: kind,
-                                                                             withReuseIdentifier: "MangaCarouselHeader",
-                                                                             for: indexPath) as? MangaCarouselHeader
+            var headerView = collectionView.dequeueReusableSupplementaryView(
+                ofKind: kind,
+                withReuseIdentifier: "MangaCarouselHeader",
+                for: indexPath
+            ) as? MangaCarouselHeader
             if headerView == nil {
                 headerView = MangaCarouselHeader(frame: .zero)
             }
@@ -194,7 +219,10 @@ extension SearchViewController: UICollectionViewDataSource {
         if cell == nil {
             cell = MangaCoverCell(frame: .zero)
         }
-        cell?.manga = results[sources[indexPath.section].id]?.manga[indexPath.row]
+        if let manga = results[sources[indexPath.section].id]?.manga[indexPath.row] {
+            cell?.manga = manga
+            cell?.showsLibraryBadge = DataManager.shared.libraryContains(manga: manga)
+        }
         return cell ?? UICollectionViewCell()
     }
 
@@ -225,23 +253,32 @@ extension SearchViewController: UICollectionViewDelegate {
         }
     }
 
-    func collectionView(_ collectionView: UICollectionView,
-                        contextMenuConfigurationForItemAt indexPath: IndexPath,
-                        point: CGPoint) -> UIContextMenuConfiguration? {
+    func collectionView(
+        _ collectionView: UICollectionView,
+        contextMenuConfigurationForItemAt indexPath: IndexPath,
+        point: CGPoint
+    ) -> UIContextMenuConfiguration? {
         UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { actions -> UIMenu? in
             var actions: [UIAction] = []
             if let manga = self.results[self.sources[indexPath.section].id]?.manga[indexPath.row] {
                 if DataManager.shared.libraryContains(manga: manga) {
-                    actions.append(UIAction(title: NSLocalizedString("REMOVE_FROM_LIBRARY", comment: ""),
-                                            image: UIImage(systemName: "trash")) { _ in
+                    actions.append(UIAction(
+                        title: NSLocalizedString("REMOVE_FROM_LIBRARY", comment: ""),
+                        image: UIImage(systemName: "trash"),
+                        attributes: .destructive
+                    ) { _ in
                         DataManager.shared.delete(manga: manga)
+                        (collectionView.cellForItem(at: indexPath) as? MangaCoverCell)?.showsLibraryBadge = false
                     })
                 } else {
-                    actions.append(UIAction(title: NSLocalizedString("ADD_TO_LIBRARY", comment: ""),
-                                            image: UIImage(systemName: "books.vertical.fill")) { _ in
+                    actions.append(UIAction(
+                        title: NSLocalizedString("ADD_TO_LIBRARY", comment: ""),
+                        image: UIImage(systemName: "books.vertical.fill")
+                    ) { _ in
                         Task {
                             if let manga = try? await SourceManager.shared.source(for: manga.sourceId)?.getMangaDetails(manga: manga) {
                                 DataManager.shared.addToLibrary(manga: manga)
+                                (collectionView.cellForItem(at: indexPath) as? MangaCoverCell)?.showsLibraryBadge = true
                             }
                         }
                     })
@@ -275,5 +312,126 @@ extension SearchViewController: UISearchBarDelegate {
             results = [:]
             reloadData()
         }
+    }
+}
+
+// MARK: - Key Handler
+extension SearchViewController {
+    override var canBecomeFirstResponder: Bool { true }
+    override var canResignFirstResponder: Bool { true }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        hoveredCell?.unhighlight()
+        resignFirstResponder()
+    }
+
+    override var keyCommands: [UIKeyCommand]? {
+        [
+            UIKeyCommand(
+                title: "Select Item to the Left",
+                action: #selector(arrowKeyPressed(_:)),
+                input: UIKeyCommand.inputLeftArrow,
+                modifierFlags: [],
+                alternates: [],
+                attributes: [],
+                state: .off
+            ),
+            UIKeyCommand(
+                title: "Select Item to the Right",
+                action: #selector(arrowKeyPressed(_:)),
+                input: UIKeyCommand.inputRightArrow,
+                modifierFlags: [],
+                alternates: [],
+                attributes: [],
+                state: .off
+            ),
+            UIKeyCommand(
+                title: "Select Item Above",
+                action: #selector(arrowKeyPressed(_:)),
+                input: UIKeyCommand.inputUpArrow,
+                modifierFlags: [],
+                alternates: [],
+                attributes: [],
+                state: .off
+            ),
+            UIKeyCommand(
+                title: "Select Item Below",
+                action: #selector(arrowKeyPressed(_:)),
+                input: UIKeyCommand.inputDownArrow,
+                modifierFlags: [],
+                alternates: [],
+                attributes: [],
+                state: .off
+            ),
+            UIKeyCommand(
+                title: "Open Selected Item",
+                action: #selector(enterKeyPressed),
+                input: "\r",
+                modifierFlags: [],
+                alternates: [],
+                attributes: [],
+                state: .off
+            ),
+            UIKeyCommand(
+                title: "Clear Selection",
+                action: #selector(escKeyPressed),
+                input: UIKeyCommand.inputEscape,
+                modifierFlags: [],
+                alternates: [],
+                attributes: [],
+                state: .off
+            )
+        ]
+    }
+
+    @objc func arrowKeyPressed(_ sender: UIKeyCommand) {
+        guard let collectionView = collectionView, collectionView.numberOfSections > 0 else { return }
+        if !hovering || hoveredCell == nil {
+            hovering = true
+            if hoveredCell == nil {
+                hoveredCell = collectionView.cellForItem(at: IndexPath(row: 0, section: 0)) as? MangaCoverCell
+            }
+            hoveredCell?.highlight()
+            return
+        }
+        guard let hoveredCell = hoveredCell, let hoveredIndexPath = collectionView.indexPath(for: hoveredCell) else { return }
+        var position = hoveredIndexPath.row
+        var section = hoveredIndexPath.section
+        if sender.input == UIKeyCommand.inputUpArrow || sender.input == UIKeyCommand.inputDownArrow {
+            guard let previousFirstIndexPath = collectionView.indexPathsForVisibleItems.filter({ $0.section == section }).sorted(by: <)[safe: 0]
+                  else { return }
+            section += sender.input == UIKeyCommand.inputUpArrow ? -1 : 1
+            guard section >= 0, section < collectionView.numberOfSections else { return }
+            collectionView.scrollToItem(at: IndexPath(row: 0, section: section), at: .centeredVertically, animated: true)
+            guard let newFirstIndexPath = collectionView.indexPathsForVisibleItems.filter({ $0.section == section }).sorted(by: <)[safe: 0]
+                  else { return }
+            position += newFirstIndexPath.row - previousFirstIndexPath.row
+        } else if sender.input == UIKeyCommand.inputLeftArrow || sender.input == UIKeyCommand.inputRightArrow {
+            position += sender.input == UIKeyCommand.inputLeftArrow ? -1 : 1
+            guard position >= 0, collectionView.indexPathsForVisibleItems.contains(IndexPath(row: position, section: section)) else { return }
+        } else {
+            return
+        }
+        position = min(position, collectionView.numberOfItems(inSection: section))
+        let newHoveredIndexPath = IndexPath(row: position, section: section)
+        hoveredCell.unhighlight()
+        (collectionView.cellForItem(at: newHoveredIndexPath) as? MangaCoverCell)?.highlight()
+        collectionView.scrollToItem(at: newHoveredIndexPath, at: [.centeredVertically, .centeredHorizontally], animated: true)
+        collectionView.accessibilityScroll(.down)
+        self.hoveredCell = (collectionView.cellForItem(at: newHoveredIndexPath) as? MangaCoverCell)
+    }
+
+    @objc func enterKeyPressed() {
+        guard let collectionView = collectionView, let hoveredCell = hoveredCell,
+              let hoveredIndexPath = collectionView.indexPath(for: hoveredCell) else { return }
+        self.collectionView(collectionView, didSelectItemAt: hoveredIndexPath)
+    }
+
+    @objc func escKeyPressed() {
+        guard let hoveredCell = hoveredCell else { return }
+        hoveredCell.unhighlight()
+        hovering = false
+        self.hoveredCell = nil
     }
 }

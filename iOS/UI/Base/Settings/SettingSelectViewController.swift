@@ -98,8 +98,8 @@ extension SettingSelectViewController {
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "UITableViewCell", for: indexPath)
 
-        if indexPath.row < item.titles?.count ?? 0 {
-            cell.textLabel?.text = item.titles?[indexPath.row]
+        if indexPath.row < item.values?.count ?? 0 {
+            cell.textLabel?.text = item.titles?[indexPath.row] ?? item.values?[indexPath.row]
             cell.accessoryType = .none
             if multi {
                 if indexes.contains(indexPath.row) {
@@ -126,7 +126,6 @@ extension SettingSelectViewController {
             }
         } else {
             if let itemValues = item.values, indexPath.row < itemValues.count {
-                tableView.cellForRow(at: indexPath)?.accessoryType = .checkmark
                 if forceSingle {
                     values.compactMap { itemValues.firstIndex(of: $0) }.forEach {
                         tableView.cellForRow(at: IndexPath(row: $0, section: 0))?.accessoryType = .none
@@ -136,10 +135,12 @@ extension SettingSelectViewController {
                     tableView.cellForRow(at: IndexPath(row: index, section: 0))?.accessoryType = .none
                     value = itemValues[indexPath.row]
                 }
+                tableView.cellForRow(at: indexPath)?.accessoryType = .checkmark
             }
         }
         if let notification = item.notification {
             source?.performAction(key: notification)
+            NotificationCenter.default.post(name: NSNotification.Name(notification), object: nil)
         }
         if let key = item.key {
             NotificationCenter.default.post(name: NSNotification.Name(key), object: nil)

@@ -8,35 +8,12 @@
 import UIKit
 import SafariServices
 
-class SourceSectionHeaderView: UITableViewHeaderFooterView {
-
-    let title = UILabel()
-
-    override init(reuseIdentifier: String?) {
-        super.init(reuseIdentifier: reuseIdentifier)
-        configureContents()
-    }
-
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-
-    func configureContents() {
-        title.font = .systemFont(ofSize: 16, weight: .medium)
-        title.translatesAutoresizingMaskIntoConstraints = false
-        contentView.addSubview(title)
-
-        NSLayoutConstraint.activate([
-            title.heightAnchor.constraint(equalToConstant: 20),
-            title.leadingAnchor.constraint(equalTo: contentView.layoutMarginsGuide.leadingAnchor),
-            title.centerYAnchor.constraint(equalTo: contentView.centerYAnchor)
-        ])
-    }
-}
-
 class BrowseViewController: UIViewController {
 
     let tableView = UITableView(frame: .zero, style: .grouped)
+
+    var hoveredIndexPath: IndexPath?
+    var hovering = false
 
     var sourceLists: [URL] = SourceManager.shared.sourceLists
 
@@ -48,6 +25,7 @@ class BrowseViewController: UIViewController {
     var updates: [ExternalSourceInfo] = [] {
         didSet {
             reloadData()
+            checkUpdateCount()
         }
     }
     var externalSources: [ExternalSourceInfo] = [] {
@@ -115,19 +93,37 @@ class BrowseViewController: UIViewController {
 
     let emptyTextStackView = UIStackView()
 
+    var observers: [NSObjectProtocol] = []
+
+    deinit {
+        for observer in observers {
+            NotificationCenter.default.removeObserver(observer)
+        }
+    }
+
     override func viewDidLoad() {
         super.viewDidLoad()
+
         title = NSLocalizedString("BROWSE", comment: "")
 
         navigationController?.navigationBar.prefersLargeTitles = true
         navigationItem.hidesSearchBarWhenScrolling = false
 
-        navigationItem.rightBarButtonItem = UIBarButtonItem(
-            image: UIImage(systemName: "globe.americas.fill"),
-            style: .plain,
-            target: self,
-            action: #selector(openLanguageSelectPage)
-        )
+        if #available(iOS 15.0, *) {
+            navigationItem.rightBarButtonItem = UIBarButtonItem(
+                image: UIImage(systemName: "globe.americas.fill"),
+                style: .plain,
+                target: self,
+                action: #selector(openLanguageSelectPage)
+            )
+        } else {
+            navigationItem.rightBarButtonItem = UIBarButtonItem(
+                image: UIImage(systemName: "globe"),
+                style: .plain,
+                target: self,
+                action: #selector(openLanguageSelectPage)
+            )
+        }
 
         let searchController = UISearchController(searchResultsController: nil)
         searchController.searchResultsUpdater = self
@@ -152,6 +148,7 @@ class BrowseViewController: UIViewController {
         tableView.widthAnchor.constraint(equalTo: view.widthAnchor).isActive = true
         tableView.heightAnchor.constraint(equalTo: view.heightAnchor).isActive = true
 
+        // no sources text
         emptyTextStackView.isHidden = true
         emptyTextStackView.axis = .vertical
         emptyTextStackView.distribution = .fill
@@ -194,36 +191,52 @@ class BrowseViewController: UIViewController {
             }
         }
 
-        NotificationCenter.default.addObserver(forName: Notification.Name("Browse.languages"), object: nil, queue: nil) { _ in
+        observers.append(NotificationCenter.default.addObserver(
+            forName: Notification.Name("Browse.languages"), object: nil, queue: nil
+        ) { [weak self] _ in
+            guard let self = self else { return }
             Task { @MainActor in
                 self.reloadData()
             }
-        }
+        })
 
-        NotificationCenter.default.addObserver(forName: Notification.Name("Browse.showNsfwSources"), object: nil, queue: nil) { _ in
+        observers.append(NotificationCenter.default.addObserver(
+            forName: Notification.Name("Browse.showNsfwSources"), object: nil, queue: nil
+        ) { [weak self] _ in
+            guard let self = self else { return }
             Task { @MainActor in
                 self.reloadData()
             }
-        }
+        })
 
-        NotificationCenter.default.addObserver(forName: Notification.Name("updateSourceLists"), object: nil, queue: nil) { _ in
+        observers.append(NotificationCenter.default.addObserver(
+            forName: Notification.Name("updateSourceLists"), object: nil, queue: nil
+        ) { [weak self] _ in
+            guard let self = self else { return }
             Task { @MainActor in
                 self.sourceLists = SourceManager.shared.sourceLists
                 await self.updateSourceLists()
                 self.reloadData()
+                self.checkUpdateCount()
             }
-        }
+        })
 
-        NotificationCenter.default.addObserver(forName: Notification.Name("updateSourceList"), object: nil, queue: nil) { _ in
+        observers.append(NotificationCenter.default.addObserver(
+            forName: Notification.Name("updateSourceList"), object: nil, queue: nil
+        ) { [weak self] _ in
+            guard let self = self else { return }
             Task { @MainActor in
                 self.sources = SourceManager.shared.sources
                 self.fetchUpdates()
             }
-        }
+        })
     }
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+
+        becomeFirstResponder()
+
         navigationController?.navigationBar.tintColor = UINavigationBar.appearance().tintColor
         navigationController?.tabBarController?.tabBar.tintColor = UITabBar.appearance().tintColor
     }
@@ -234,13 +247,15 @@ class BrowseViewController: UIViewController {
     }
 
     func reloadData() {
-        UIView.transition(with: tableView,
-                          duration: 0.3,
-                          options: .transitionCrossDissolve,
-                          animations: { self.tableView.reloadData() },
-                          completion: { _ in
-            self.emptyTextStackView.isHidden = self.tableView.numberOfSections != 0
-        })
+        UIView.transition(
+            with: tableView,
+            duration: 0.3,
+            options: .transitionCrossDissolve,
+            animations: { self.tableView.reloadData() },
+            completion: { _ in
+                self.emptyTextStackView.isHidden = self.tableView.numberOfSections != 0
+            }
+        )
     }
 
     func fetchUpdates() {
@@ -253,6 +268,13 @@ class BrowseViewController: UIViewController {
             }
         }
         updates = newUpdates
+    }
+
+    func checkUpdateCount() {
+        // store update count and display badge
+        let updateCount = filteredUpdates.count
+        UserDefaults.standard.set(updateCount, forKey: "Browse.updateCount")
+        tabBarController?.tabBar.items?[1].badgeValue = updateCount > 0 ? String(updateCount) : nil
     }
 
     @MainActor
@@ -270,6 +292,9 @@ class BrowseViewController: UIViewController {
         }
 
         externalSources.sort { $0.name < $1.name }
+        externalSources.sort {
+            SourceManager.shared.languageCodes.firstIndex(of: $0.lang) ?? 0 < SourceManager.shared.languageCodes.firstIndex(of: $1.lang) ?? 0
+        }
         fetchUpdates()
     }
 
@@ -379,9 +404,11 @@ extension BrowseViewController: UITableViewDataSource {
         72
     }
 
-    func tableView(_ tableView: UITableView,
-                   contextMenuConfigurationForRowAt indexPath: IndexPath,
-                   point: CGPoint) -> UIContextMenuConfiguration? {
+    func tableView(
+        _ tableView: UITableView,
+        contextMenuConfigurationForRowAt indexPath: IndexPath,
+        point: CGPoint
+    ) -> UIContextMenuConfiguration? {
         if (indexPath.section == 0 && hasSources && !hasUpdates) || (indexPath.section == 1 && hasSources && hasUpdates) {
             return UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { _ -> UIMenu? in
                 let action = UIAction(title: NSLocalizedString("UNINSTALL", comment: ""), image: UIImage(systemName: "trash")) { _ in
@@ -402,7 +429,6 @@ extension BrowseViewController: UITableViewDelegate {
             let vc = SourceViewController(source: sources[indexPath.row])
             navigationController?.pushViewController(vc, animated: true)
         }
-
         tableView.deselectRow(at: indexPath, animated: true)
     }
 }
@@ -412,5 +438,100 @@ extension BrowseViewController: UISearchResultsUpdating {
     func updateSearchResults(for searchController: UISearchController) {
         searchText = searchController.searchBar.text ?? ""
         tableView.reloadData()
+    }
+}
+
+// MARK: - Key Handler
+extension BrowseViewController {
+    override var canBecomeFirstResponder: Bool { true }
+    override var canResignFirstResponder: Bool { true }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        resignFirstResponder()
+    }
+
+    override var keyCommands: [UIKeyCommand]? {
+        [
+            UIKeyCommand(
+                title: "Select Previous Item in List",
+                action: #selector(arrowKeyPressed(_:)),
+                input: UIKeyCommand.inputUpArrow,
+                modifierFlags: [],
+                alternates: [],
+                attributes: [],
+                state: .off
+            ),
+            UIKeyCommand(
+                title: "Select Next Item in List",
+                action: #selector(arrowKeyPressed(_:)),
+                input: UIKeyCommand.inputDownArrow,
+                modifierFlags: [],
+                alternates: [],
+                attributes: [],
+                state: .off
+            ),
+            UIKeyCommand(
+                title: "Confirm Selection",
+                action: #selector(enterKeyPressed),
+                input: "\r",
+                modifierFlags: [],
+                alternates: [],
+                attributes: [],
+                state: .off
+            ),
+            UIKeyCommand(
+                title: "Clear Selection",
+                action: #selector(escKeyPressed),
+                input: UIKeyCommand.inputEscape,
+                modifierFlags: [],
+                alternates: [],
+                attributes: [],
+                state: .off
+            )
+        ]
+    }
+
+    @objc func arrowKeyPressed(_ sender: UIKeyCommand) {
+        if !hovering {
+            hovering = true
+            if hoveredIndexPath == nil { hoveredIndexPath = IndexPath(row: 0, section: 0) }
+            tableView.cellForRow(at: hoveredIndexPath!)?.setHighlighted(true, animated: true)
+            return
+        }
+        guard let hoveredIndexPath = hoveredIndexPath else { return }
+        var position = hoveredIndexPath.row
+        var section = hoveredIndexPath.section
+        switch sender.input {
+        case UIKeyCommand.inputUpArrow: position -= 1
+        case UIKeyCommand.inputDownArrow: position += 1
+        default: return
+        }
+        if position < 0 {
+            guard section > 0 else { return }
+            section -= 1
+            position = tableView.numberOfRows(inSection: section) - 1
+        } else if position >= tableView.numberOfRows(inSection: section) {
+            guard section < tableView.numberOfSections - 1 else { return }
+            section += 1
+            position = 0
+        }
+        let newHoveredIndexPath = IndexPath(row: position, section: section)
+        tableView.cellForRow(at: hoveredIndexPath)?.setHighlighted(false, animated: true)
+        tableView.cellForRow(at: newHoveredIndexPath)?.setHighlighted(true, animated: true)
+        tableView.scrollToRow(at: newHoveredIndexPath, at: .middle, animated: true)
+        self.hoveredIndexPath = newHoveredIndexPath
+    }
+
+    @objc func enterKeyPressed() {
+        guard !tableView.isEditing, hovering, let hoveredIndexPath = hoveredIndexPath else { return }
+        tableView(tableView, didSelectRowAt: hoveredIndexPath)
+    }
+
+    @objc func escKeyPressed() {
+        guard !tableView.isEditing, hovering, let hoveredIndexPath = hoveredIndexPath else { return }
+        tableView.cellForRow(at: hoveredIndexPath)?.setHighlighted(false, animated: true)
+        hovering = false
+        self.hoveredIndexPath = nil
     }
 }

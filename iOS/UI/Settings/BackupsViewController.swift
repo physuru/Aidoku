@@ -12,6 +12,14 @@ class BackupsViewController: UITableViewController {
 
     var backups: [URL] = []
 
+    var observers: [NSObjectProtocol] = []
+
+    deinit {
+        for observer in observers {
+            NotificationCenter.default.removeObserver(observer)
+        }
+    }
+
     init() {
         super.init(style: .insetGrouped)
     }
@@ -36,7 +44,10 @@ class BackupsViewController: UITableViewController {
             tableView.reloadSections(IndexSet(integer: 0), with: .fade)
         }
 
-        NotificationCenter.default.addObserver(forName: Notification.Name("updateBackupList"), object: nil, queue: nil) { _ in
+        observers.append(NotificationCenter.default.addObserver(
+            forName: Notification.Name("updateBackupList"), object: nil, queue: nil
+        ) { [weak self] _ in
+            guard let self = self else { return }
             let previousBackups = self.backups
             self.backups = BackupManager.backupUrls
             let previousCount = previousBackups.count
@@ -60,7 +71,7 @@ class BackupsViewController: UITableViewController {
                     }
                 }
             }
-        }
+        })
     }
 
     @objc func createBackup() {
@@ -128,20 +139,22 @@ extension BackupsViewController {
 
         restoreAlert.addAction(UIAlertAction(title: NSLocalizedString("RESTORE", comment: ""), style: .destructive) { _ in
             if let backup = Backup.load(from: self.backups[indexPath.row]) {
-                BackupManager.shared.restore(from: backup)
-                let missingSources = (backup.sources ?? []).filter {
-                    !DataManager.shared.hasSource(id: $0)
-                }
-                if !missingSources.isEmpty {
-                    var message = NSLocalizedString("MISSING_SOURCES_TEXT", comment: "")
-                    message += missingSources.map { "\n- \($0)" }.joined()
-                    let missingAlert = UIAlertController(
-                        title: NSLocalizedString("MISSING_SOURCES", comment: ""),
-                        message: message,
-                        preferredStyle: .alert
-                    )
-                    missingAlert.addAction(UIAlertAction(title: NSLocalizedString("OK", comment: ""), style: .cancel))
-                    self.present(missingAlert, animated: true)
+                Task {
+                    await BackupManager.shared.restore(from: backup)
+                    let missingSources = (backup.sources ?? []).filter {
+                        !DataManager.shared.hasSource(id: $0)
+                    }
+                    if !missingSources.isEmpty {
+                        var message = NSLocalizedString("MISSING_SOURCES_TEXT", comment: "")
+                        message += missingSources.map { "\n- \($0)" }.joined()
+                        let missingAlert = UIAlertController(
+                            title: NSLocalizedString("MISSING_SOURCES", comment: ""),
+                            message: message,
+                            preferredStyle: .alert
+                        )
+                        missingAlert.addAction(UIAlertAction(title: NSLocalizedString("OK", comment: ""), style: .cancel))
+                        self.present(missingAlert, animated: true)
+                    }
                 }
             }
         })

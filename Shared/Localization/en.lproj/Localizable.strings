@@ -14,14 +14,21 @@
 "UNAVAILABLE" = "Unavailable";
 "RESET" = "Reset";
 "DELETE" = "Delete";
+"REMOVE" = "Remove";
 "RENAME" = "Rename";
+"CLEAR" = "Clear";
+"LOADING_ELLIPSIS" = "Loading…";
+"SHARE" = "Share";
 
 // Downloads
 "DOWNLOAD" = "Download";
 "DOWNLOADED" = "Downloaded";
+"DOWNLOAD_QUEUE" = "Download Queue";
 "CANCEL_DOWNLOAD" = "Cancel Download";
 "REMOVE_DOWNLOAD" = "Remove Download";
 "REMOVE_ALL_DOWNLOADS" = "Remove All Downloads";
+"REMOVE_DOWNLOADS" = "Remove Downloads";
+"REMOVE_DOWNLOADS_CONFIRM" = "Are you sure you'd like to remove all selected downloads?";
 
 // Library
 "LIBRARY" = "Library";
@@ -31,7 +38,6 @@
 "ADD_TO_LIBRARY" = "Add to Library";
 "REMOVE_FROM_LIBRARY" = "Remove from Library";
 "MANGA_INFO" = "Manga Info";
-
 "SORT_BY" = "Sort By";
 "FILTER_BY" = "Filter By";
 "TITLE" = "Title";
@@ -39,6 +45,17 @@
 "LAST_READ" = "Last Read";
 "LATEST_CHAPTER" = "Latest Chapter";
 "DATE_ADDED" = "Date Added";
+
+// Categories
+"ALL" = "All";
+"NONE" = "None";
+"CATEGORIES" = "Categories";
+"EDIT_CATEGORIES" = "Edit Categories";
+"CATEGORY_ADD" = "Add Category";
+"CATEGORY_ADD_TEXT" = "Enter the title of the new category to create.";
+"CATEGORY_TITLE" = "Category Title";
+"DEFAULT_CATEGORY" = "Default Category";
+"ALWAYS_ASK" = "Always Ask";
 
 // Browse
 "BROWSE" = "Browse";
@@ -48,7 +65,6 @@
 "UPDATES" = "Updates";
 "INSTALLED" = "Installed";
 "EXTERNAL" = "External";
-
 "BUTTON_UPDATE" = "UPDATE";
 "BUTTON_GET" = "GET";
 "BUTTON_ERROR" = "ERROR";
@@ -75,10 +91,8 @@
 "NSFW" = "NSFW";
 "MORE" = "more";
 "SOURCE_ORDER" = "Source Order";
-
 "MISSING_SOURCE" = "Missing Source";
 "MISSING_SOURCE_TEXT" = "The original source seems to be missing for this Manga. Please redownload it or remove this title from your library.";
-
 "SELECT_CHAPTERS" = "Select Chapters";
 "SELECT_ALL" = "Select All";
 "DESELECT_ALL" = "Deselect All";
@@ -86,6 +100,12 @@
 // Reader
 "CHAPTER" = "Chapter";
 "CHAPTERS" = "Chapters";
+"VOLUME_X" = "Volume %g";
+"CHAPTER_X" = "Chapter %g";
+"VOL_X" = "Vol.%g";
+"CH_X" = "Ch.%g";
+"VOL_SPACE_X" = "Vol. %g";
+"CH_SPACE_X" = "Ch. %g";
 "NO_CHAPTERS" = "No Chapters";
 "NO_CHAPTERS_AVAILABLE" = "No Chapters Available";
 "START_READING" = "Start Reading";
@@ -97,7 +117,12 @@
 "MARK_PREVIOUS" = "Mark Previous";
 "MARK_READ" = "Mark as Read";
 "MARK_UNREAD" = "Mark as Unread";
-
+"PREVIOUS_COLON" = "Previous:";
+"NEXT_COLON" = "Next:";
+"FINISHED_COLON" = "Finished:";
+"CURRENT_COLON" = "Current:";
+"NO_NEXT_CHAPTER" = "There is no next chapter";
+"NO_PREVIOUS_CHAPTER" = "There is no previous chapter";
 "READER_SETTINGS" = "Reader Settings";
 "READING_MODE" = "Reading Mode";
 "DEFAULT" = "Default";
@@ -107,8 +132,17 @@
 "VERTICAL_SCROLL" = "Vertical Scroll";
 "EXPERIMENTAL" = "Experimental";
 "INFINITE_VERTICAL_SCROLL" = "Infinite Vertical Scrolling";
-
 "SAVE_TO_PHOTOS" = "Save to Photos";
+
+// History
+"HISTORY" = "History";
+"%@_AGO" = "%@ ago";
+"PAGE_X" = "Page %i";
+"REMOVE_CHAPTER_HISTORY_TEXT" = "This will remove history for this chapter. Are you sure you want to continue?";
+"REMOVE_ALL_MANGA_HISTORY" = "Remove All Manga History";
+"HISTORY_LOCKED" = "History is locked.";
+"VIEW_HISTORY" = "View History";
+"AUTH_FOR_HISTORY" = "Authenticate to view reading history.";
 
 // Search
 "SEARCH" = "Search";
@@ -116,28 +150,27 @@
 
 // Settings
 "SETTINGS" = "Settings";
-
+"AUTH_TO_ENABLE" = "Authenticate to enable.";
+"AUTH_TO_DISABLE" = "Authenticate to disable.";
 "ABOUT" = "About";
 "GITHUB_REPO" = "GitHub Repository";
 "DISCORD_SERVER" = "Discord Server";
 "SUPPPORT_DEVELOPMENT" = "Support Development";
-
 "GENERAL" = "General";
 "ICLOUD_SYNC" = "iCloud Sync";
+"INCOGNITO_MODE" = "Incognito Mode";
+"INCOGNITO_MODE_TEXT" = "Pauses reading history when enabled";
 "APPEARANCE" = "Appearance";
 "APPEARANCE_LIGHT" = "Light";
 "APPEARANCE_DARK" = "Dark";
 "USE_SYSTEM_APPEARANCE" = "Use System Appearance";
-
 "MANGA_PAGE" = "Manga Page";
 "SHOW_SOURCE_LABEL" = "Show Source Label";
 "USE_MANGA_TINT" = "Use Manga Tint";
 "USE_MANGA_TINT_INFO" = "Tint manga pages based on the color of the cover image";
-
 "MANGA_PER_ROW" = "Manga per row";
 "PORTRAIT" = "Portrait";
 "LANDSCAPE" = "Landscape";
-
 "READER" = "Reader";
 "OPEN_READER_VIEW" = "Open Reader View";
 "UNREAD_CHAPTER_BADGES" = "Unread Chapter Badges";
@@ -145,20 +178,32 @@
 "PIN_MANGA_TYPE" = "Pin Type";
 "PIN_MANGA_UNREAD" = "Unread";
 "PIN_MANGA_UPDATED" = "Updated";
-
+"LIBRARY_UPDATING" = "Library Updating";
+"UPDATE_INTERVAL" = "Update Interval";
+"SKIP_TITLES" = "Skip Titles";
+"ONLY_UPDATE_ON_WIFI" = "Only Update on Wi-Fi";
+"EXCLUDED_CATEGORIES" = "Excluded Categories";
+"REFRESH_METADATA" = "Refresh Metadata";
+"NEVER" = "Never";
+"EVERY_12_HOURS" = "Every 12 hours";
+"DAILY" = "Daily";
+"EVERY_2_DAYS" = "Every 2 days";
+"WEEKLY" = "Weekly";
+"WITH_UNREAD_CHAPTERS" = "With unread chapters";
+"WITH_COMPLETED_STATUS" = "With completed status";
+"THAT_HAVENT_BEEN_READ" = "That haven't been read";
 "SOURCE_LISTS" = "Source Lists";
 "SOURCE_LIST_ADDED" = "Source List Added";
 "SOURCE_LIST_ADDED_TEXT" = "You can now browse external sources in the Browse tab.";
 "SHOW_NSFW_SOURCES" = "Show NSFW Sources";
-
 "SOURCE_LIST_URL" = "Source List URL";
 "SOURCE_LIST_ADD" = "Add Source List";
 "SOURCE_LIST_ADD_TEXT" = "Enter the source list URL";
 "SOURCE_LIST_ADD_FAIL" = "Failed to Add Source List";
 "SOURCE_LIST_ADD_FAIL_TEXT" = "The provided source list URL is invalid or has already been added.";
-
+"LOCK_HISTORY_TAB" = "Lock History Tab";
 "DOWNSAMPLE_IMAGES" = "Downsample Images";
-
+"SAVE_IMAGE_OPTION" = "Save Image Option";
 "BACKUPS" = "Backups";
 "BACKUP_NAME" = "Backup Name";
 "RENAME_BACKUP" = "Rename Backup";
@@ -166,8 +211,8 @@
 "CORRUPTED_BACKUP" = "Corrupted Backup";
 "CORRUPTED_BACKUP_TEXT" = "This backup seems to have misconfigured data. Renaming is not possible.";
 "BACKUP_INFO" = "Long press on a backup to export it, or swipe to the left to delete.";
-"BACKUP_MISSING_SOURCES" = "Missing Sources";
-"BACKUP_MISSING_SOURCES_TEXT" = "The restored backup may contain data from the following sources, which are not currently installed:";
+"MISSING_SOURCES" = "Missing Sources";
+"MISSING_SOURCES_TEXT" = "The restored backup may contain data from the following sources, which are not currently installed:";
 "RESTORE_BACKUP" = "Restore to this backup?";
 "RESTORE_BACKUP_TEXT" = "All current data will be removed and replaced by the data from this backup.";
 "BACKUP_IMPORT_SUCCESS" = "Backup Imported";
@@ -176,14 +221,12 @@
 "BACKUP_IMPORT_FAIL_TEXT" = "Failed to save backup. Please ensure that your backup is in the proper format.";
 "EXPORT" = "Export";
 "RESTORE" = "Restore";
-
+"LOGS" = "Logs";
 "LOGGING" = "Logging";
 "LOG_SERVER" = "Log Server";
 "EXPORT_LOGS" = "Export Logs";
 "DISPLAY_LOGS" = "Display Logs";
-
 "ADVANCED" = "Advanced";
-"RESET" = "Reset";
 "RESET_TEXT" = "This action is irreversible. All data, settings, and caches will be cleared and reset.";
 "CLEAR_CHAPTER_CACHE" = "Clear Chapter Cache";
 "CLEAR_CHAPTER_CACHE_TEXT" = "This action is irreversible. Cached chapters will be cleared and redownloaded.";
@@ -195,3 +238,21 @@
 "CLEAR_READ_HISTORY_TEXT" = "This action is irreversible. All read history will be removed.";
 "RESET_SETTINGS" = "Reset Settings";
 "RESET_SETTINGS_TEXT" = "This action is irreversible. All app and source settings will be reset.";
+"PAGE_X_OF_X" = "Page %i of %i";
+"LIBRARY_LOCKED" = "Library is locked.";
+"CATEGORY_LOCKED" = "Category is locked.";
+"VIEW_LIBRARY" = "View Library";
+"CATEGORY_EMPTY" = "Category Empty";
+"AUTH_TO_OPEN" = "Authenticate to open.";
+"LOCKED_CATEGORIES" = "Locked Categories";
+"AUTH_FOR_LIBRARY" = "Authenticate to view library.";
+"LOCK_LIBRARY" = "Lock Library";
+"SET_AS_WIDE_PAGE" = "Set as Wide Page";
+"AUTOMATIC" = "Automatic";
+"SET_AS_NORMAL_PAGE" = "Set as Normal Page";
+"PAGES_TO_PRELOAD" = "Pages to Preload";
+"SINGLE_PAGE" = "Single Page";
+"PAGED" = "Paged";
+"PAGE_LAYOUT" = "Page Layout";
+"DOUBLE_PAGE" = "Double Page";
+"MULTI_LANGUAGE" = "Multi-Language";

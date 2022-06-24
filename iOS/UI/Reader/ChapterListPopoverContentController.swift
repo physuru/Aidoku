@@ -14,6 +14,8 @@ protocol ChapterListPopoverDelegate: AnyObject {
 class ChapterListPopoverContentController: UIViewController {
     let chapterList: [Chapter]
     var selectedIndex: Int
+    var hoveredIndexPath: IndexPath?
+    var hovering = false
 
     weak var delegate: ChapterListPopoverDelegate?
 
@@ -47,6 +49,8 @@ class ChapterListPopoverContentController: UIViewController {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
 
+        becomeFirstResponder()
+
         tableView?.layoutIfNeeded()
         guard selectedIndex < chapterList.count else { return }
         tableView?.scrollToRow(at: IndexPath(row: selectedIndex, section: 0), at: .middle, animated: false)
@@ -74,9 +78,9 @@ extension ChapterListPopoverContentController: UITableViewDataSource {
 
         var chapterString = ""
         if let volume = volume, volume > 0 {
-            chapterString.append(String(format: "Vol.%g ", volume))
+            chapterString.append(String(format: "\(NSLocalizedString("VOL_X", comment: "")) ", volume))
         }
-        chapterString.append(String(format: "Ch.%g", chapter.chapterNum ?? 0))
+        chapterString.append(String(format: NSLocalizedString("CH_X", comment: ""), chapter.chapterNum ?? 0))
 
         cell.backgroundColor = .clear
         cell.textLabel?.text = chapterString
@@ -85,6 +89,8 @@ extension ChapterListPopoverContentController: UITableViewDataSource {
             cell.detailTextLabel?.text = title
             cell.detailTextLabel?.font = cell.textLabel?.font
             cell.detailTextLabel?.textColor = .secondaryLabel
+        } else {
+            cell.detailTextLabel?.text = nil
         }
         if indexPath.row == selectedIndex {
             cell.accessoryType = .checkmark
@@ -110,5 +116,103 @@ extension ChapterListPopoverContentController: UITableViewDelegate {
         }
 
         tableView.deselectRow(at: indexPath, animated: true)
+    }
+}
+
+// MARK: - Key Handler
+extension ChapterListPopoverContentController {
+    override var canBecomeFirstResponder: Bool { true }
+    override var canResignFirstResponder: Bool { true }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        resignFirstResponder()
+    }
+
+    override var keyCommands: [UIKeyCommand]? {
+        [
+            UIKeyCommand(
+                title: "Select Previous Item in List",
+                action: #selector(arrowKeyPressed(_:)),
+                input: UIKeyCommand.inputUpArrow,
+                modifierFlags: [],
+                alternates: [],
+                attributes: [],
+                state: .off
+            ),
+            UIKeyCommand(
+                title: "Select Next Item in List",
+                action: #selector(arrowKeyPressed(_:)),
+                input: UIKeyCommand.inputDownArrow,
+                modifierFlags: [],
+                alternates: [],
+                attributes: [],
+                state: .off
+            ),
+            UIKeyCommand(
+                title: "Confirm Selection",
+                action: #selector(enterKeyPressed),
+                input: "\r",
+                modifierFlags: [],
+                alternates: [],
+                attributes: [],
+                state: .off
+            ),
+            UIKeyCommand(
+                title: "Clear Selection",
+                action: #selector(escKeyPressed),
+                input: UIKeyCommand.inputEscape,
+                modifierFlags: [],
+                alternates: [],
+                attributes: [],
+                state: .off
+            )
+        ]
+    }
+
+    @objc func arrowKeyPressed(_ sender: UIKeyCommand) {
+        guard let tableView = tableView else { return }
+        if !hovering {
+            hovering = true
+            if hoveredIndexPath == nil { hoveredIndexPath = IndexPath(row: 0, section: 0) }
+            tableView.cellForRow(at: hoveredIndexPath!)?.setHighlighted(true, animated: true)
+            return
+        }
+        guard let hoveredIndexPath = hoveredIndexPath else { return }
+        var position = hoveredIndexPath.row
+        var section = hoveredIndexPath.section
+        switch sender.input {
+        case UIKeyCommand.inputUpArrow: position -= 1
+        case UIKeyCommand.inputDownArrow: position += 1
+        default: return
+        }
+        if position < 0 {
+            guard section > 0 else { return }
+            section -= 1
+            position = tableView.numberOfRows(inSection: section) - 1
+        } else if position >= tableView.numberOfRows(inSection: section) {
+            guard section < tableView.numberOfSections - 1 else { return }
+            section += 1
+            position = 0
+        }
+        let newHoveredIndexPath = IndexPath(row: position, section: section)
+        tableView.cellForRow(at: hoveredIndexPath)?.setHighlighted(false, animated: true)
+        tableView.cellForRow(at: newHoveredIndexPath)?.setHighlighted(true, animated: true)
+        tableView.scrollToRow(at: newHoveredIndexPath, at: .middle, animated: true)
+        self.hoveredIndexPath = newHoveredIndexPath
+    }
+
+    @objc func enterKeyPressed() {
+        guard let tableView = tableView else { return }
+        guard !tableView.isEditing, hovering, let hoveredIndexPath = hoveredIndexPath else { return }
+        self.tableView(tableView, didSelectRowAt: hoveredIndexPath)
+    }
+
+    @objc func escKeyPressed() {
+        guard let tableView = tableView else { return }
+        guard !tableView.isEditing, hovering, let hoveredIndexPath = hoveredIndexPath else { return }
+        tableView.cellForRow(at: hoveredIndexPath)?.setHighlighted(false, animated: true)
+        hovering = false
+        self.hoveredIndexPath = nil
     }
 }

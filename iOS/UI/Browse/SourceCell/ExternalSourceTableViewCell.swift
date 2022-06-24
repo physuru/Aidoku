@@ -103,7 +103,7 @@ class ExternalSourceTableViewCell: UITableViewCell {
         iconView.widthAnchor.constraint(equalToConstant: 48).isActive = true
         iconView.heightAnchor.constraint(equalToConstant: 48).isActive = true
 
-        labelStack.leadingAnchor.constraint(equalTo: iconView.trailingAnchor, constant: 10).isActive = true
+        labelStack.leadingAnchor.constraint(equalTo: iconView.trailingAnchor, constant: 12).isActive = true
         labelStack.centerYAnchor.constraint(equalTo: contentView.centerYAnchor).isActive = true
 
         badgeLabel.centerYAnchor.constraint(equalTo: badgeView.centerYAnchor).isActive = true
@@ -126,7 +126,8 @@ class ExternalSourceTableViewCell: UITableViewCell {
         titleLabel.text = source?.name
         versionLabel.text = "v\(source?.version ?? 1)"
         badgeView.isHidden = source?.nsfw ?? 0 <= 1
-        subtitleLabel.text = source?.id
+        subtitleLabel.text = source?.lang == "multi" ? NSLocalizedString("MULTI_LANGUAGE", comment: "")
+            : (Locale.current as NSLocale).displayName(forKey: .identifier, value: source?.lang ?? "")
         iconView.kf.setImage(
             with: source?.sourceUrl?.appendingPathComponent("icons", isDirectory: true).appendingPathComponent(source?.icon ??  ""),
             placeholder: UIImage(named: "MangaPlaceholder"),
